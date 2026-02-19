@@ -1,31 +1,53 @@
 from sympy import symbols, Eq, sin, log, solve, lambdify
 import math
 
+def input_right_values(variable_type: type, msg: str):
+    while True:
+        raw = input(msg)
+        try:
+            value = variable_type(raw)
+            return value
+        except (ValueError, TypeError):
+            print("wrong type!")
+
+
+
 x = symbols('x')
 #f_exp = log(x/4) + 4*sin(3*x)+1
 f_exp = x**6 -5.5*x**5 + 6.18*x**4 + 18.54*x**3 - 56.9592*x**2 + 55.9872*x - 19.3156
 f = lambdify(x, f_exp, 'math')
 
+
+print("For function: " + str(f_exp))
+
 #borders
-a=1.8
-b=2.8
+a = input_right_values(float, "Input left border:")
+b = input_right_values(float, "Input right border:")
 
 
-def derivative_approx(x, h=1e-6):
+def derivative_approx(x, f=f,h=1e-6):
     return (f(x + h) - f(x - h)) / (2*h)
 
-def second_derivative_approx(x, h=1e-6):
+def second_derivative_approx(x, f=f,h=1e-6):
     return (f(x + h) - 2*f(x) + f(x - h)) / (h*h)
+
+def basic_verify(l_border:float,r_border:float, f=f) : bool 
+    f_l_border = f(l_border)
+    f_r_border = f(r_border)
+    if(f_l_border * f_r_border <0) : return True
+    elif(f_l_border * f_r_border >0) : 
+        print("no root (or even amount of roots)")
+        return False
+    else:
+        print("root is " + str(l_border if f_l_border==0 else r_border) )
+        return False
 
 
 def method_half (l_border : float, r_border : float, E=1e-6) :
-    f_l_border = f(l_border)
-    f_r_border = f(r_border)
-    if(f_l_border * f_r_border <0) :
-        
-
+    if (basic_verify(l_border,r_border)) :
         while True:
             center = (l_border + r_border) /2
+
             if(f(l_border)*f(center)>0):  
                 l_border = center
             else :
@@ -35,16 +57,9 @@ def method_half (l_border : float, r_border : float, E=1e-6) :
                 print("right border: "+str(r_border))
                 break
 
-    elif(f_l_border * f_r_border >0) :
-        print("no root (or even amount of roots)")
-    else :
-        print("root is " + str(l_border if f_l_border==0 else r_border)  )
-
 
 def method_hord(l_border : float, r_border : float, E=1e-6):
-    f_l_border = f(l_border)
-    f_r_border = f(r_border)
-    if(f_l_border * f_r_border <0) :
+    if (basic_verify(l_border,r_border)) :
 
         if(f(l_border)* second_derivative_approx(l_border)<0):
             x = l_border
@@ -61,15 +76,10 @@ def method_hord(l_border : float, r_border : float, E=1e-6):
                 break
             x=new_x
 
-    elif(f_l_border * f_r_border >0) :
-        print("no root (or even amount of roots)")
-    else :
-        print("root is " + str(l_border if f_l_border==0 else r_border)  )
+
 
 def method_newton(l_border : float, r_border : float, E=1e-6):
-    f_l_border = f(l_border)
-    f_r_border = f(r_border)
-    if(f_l_border * f_r_border <0) :
+    if (basic_verify(l_border,r_border)) :
         center = (l_border+r_border)/2
         x=0
         if(derivative_approx(center) * second_derivative_approx(center) >0) :
@@ -82,10 +92,6 @@ def method_newton(l_border : float, r_border : float, E=1e-6):
                 print("root ≈ "+str(new_x))
                 break
             x=new_x
-    elif(f_l_border * f_r_border >0) :
-        print("no root (or even amount of roots)")
-    else :
-        print("root is " + str(l_border if f_l_border==0 else r_border)  )
 
 def method_easy_itteration(l_border : float, r_border : float, E=1e-6):
     f_l_border = f(l_border)
@@ -120,11 +126,13 @@ def method_easy_itteration(l_border : float, r_border : float, E=1e-6):
     else :
         print("root is " + str(l_border if f_l_border==0 else r_border)  )
 
-
+print("Метод деления пополам:")
 method_half(a,b)
-print()
+print("\n Метод хорд:")
 method_hord(a,b)
+print("\n Метод Ньютона:")
 method_newton(a,b)
+print("\n Метод простой итерации:")
 method_easy_itteration(a,b)
 
 
