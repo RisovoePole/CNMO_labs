@@ -1,14 +1,13 @@
 import time
 
+
 def timer(func):
-    def wrapper():
+    def wrapper(*args, **kwargs):
         start = time.time()
-
-        result = func()
-
+        result = func(*args, **kwargs)
         end = time.time()
 
-        print(f"Execution time for {func.__name__} is {end - start:.5f} seconds.\n")
+        print(f"{end - start:.7f} sec.\n")
 
         return result
     return wrapper
