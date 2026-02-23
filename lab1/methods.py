@@ -128,13 +128,4 @@ def method_easy_itteration(l_border : float, r_border : float, E=1e-6):
             x = new_x
         
 
-print("Метод деления пополам:")
-method_half(a,b)
-print("\n Метод хорд:")
-method_hord(a,b)
-print("\n Метод Ньютона:")
-method_newton(a,b)
-print("\n Метод простой итерации:")
-method_easy_itteration(a,b)
-
 
