@@ -3,12 +3,12 @@
       case File.ls("Data/") do
         {:ok,list} ->
           case write_file(list, 1) do
-          :ok -> {:ok, length(list)}
-          :empty ->{:empty}
+            :ok -> {:ok, length(list)}
+            :empty ->{:empty}
           end
 
-        {:error, reason} ->
-          {:error, reason}
+        {:error, :enoent} ->
+          {:error, "dir not found"}
       end
 
     end
