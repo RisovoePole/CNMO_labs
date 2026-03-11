@@ -1,14 +1,22 @@
  defmodule Main.CheckInput do
-    def ask_input() do
-      IO.gets("Choose file:") |>
+    def ask_input(msg,len) do
+      IO.gets(msg) |>
       Integer.parse() |>
-      check_input()
+      check_input(len)
     end
 
-    defp check_input(:error) do
-      IO.puts("Wrong type!")
-      ask_input()
+    defp check_input(:error, len) do
+      error_msg = "Wrong type!"
+      ask_input(error_msg,len)
     end
 
-    defp check_input({number, _}), do: number
+    defp check_input({number, _}, len) do
+      cond do
+        number<=len and number >0 ->
+          number
+        true ->
+          error_msg = "Wrong number! Enter file number from the list."
+          ask_input(error_msg, len)
+        end
+      end
     end
