@@ -2,20 +2,12 @@
 
 **TODO: Add description**
 
-## Installation
+## FIX
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `lab2` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:lab2, "~> 0.1.0"}
-  ]
-end
+``` bash
+Generated lab2 app
+1.  dataset1.txt
+Choose a file:1
+"2\n"
+{:error, "Invalid size - must be positive integer."}
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/lab2>.
-

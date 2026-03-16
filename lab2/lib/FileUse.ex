@@ -3,7 +3,7 @@
       case File.ls("Data/") do
         {:ok,list} ->
           case write_file(list, 1) do
-            :ok -> {:ok, length(list)}
+            :ok -> {:ok, list}
             :empty ->{:empty}
           end
 
