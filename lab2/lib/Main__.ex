@@ -3,6 +3,8 @@ defmodule Main do
   import Main.FileUse, only: [write_files_list: 0]
   import Math
 
+  #IO.inspect(charlists: :as_lists) для вывода списка чисел входящие в ASCII
+
   def main() do
     choose_file()
   end
@@ -15,7 +17,7 @@ defmodule Main do
         matrix =
         Enum.at(list, number-1)
         |> Math.Matrix.set_from_file()
-        |> IO.inspect()
+        |> IO.inspect(charlists: :as_lists)
 
 
       {:empty} ->
