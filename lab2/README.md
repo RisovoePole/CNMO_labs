@@ -1,13 +1,10 @@
 # Lab2
 
 **TODO: Add description**
-
-## FIX
-
-``` bash
-Generated lab2 app
-1.  dataset1.txt
-Choose a file:1
-"2\n"
-{:error, "Invalid size - must be positive integer."}
-```
+ TODO:
+    case CheckInput.ask_confirm("Continue anyway? (y/n):\n") do
+    true ->
+        LOGIC...
+        calc_with_methods(matrix, absolute_els)
+    false -> IO.inspect("Прервано...")
+    end

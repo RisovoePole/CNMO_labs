@@ -1,110 +1,14 @@
 # defmodule GaussJordan and GaussSeidel в mix проект.
 defmodule Math do
-  defmodule Matrix do
-    defstruct rows: 0,
-              columns: 0,
-              data: [],
-              results: []
-
-    def set_from_file(file_name) when is_bitstring(file_name) do
-      case File.open("Data/" <> file_name) do
-        {:ok, io_device} ->
-          try do
-            num_str = IO.read(io_device, :line)
-            num = String.slice(num_str, 0..-2//1)
-            |> String.to_integer()
-
-            case num do
-              {:error, reason} ->
-                {:error, reason}
-
-              num when num <= 1 ->
-                {:error, "Size of matrix #{num} < 2"}
-
-              num when num > 1 ->
-                size = num
-
-                matrix = %Matrix{columns: size}
-
-                result = do_set_matrix_by_row(io_device, matrix)
-
-                case result do
-                  {:fail, reason} -> {:error, reason}
-                  %Matrix{rows: ^size} -> result
-                  %Matrix{} -> {:error, "Not enough data rows: require #{size}"}
-                end
-            end
-          rescue
-            ArgumentError -> {:error, "Invalid size - must be positive integer."}
-          end
-      end
-    end
-
-    defp do_set_matrix_by_row(io_device, matrix = %Matrix{}, row_idx \\ 2) do
-      IO.read(io_device, :line)
-      |> set_matrix_by_row(io_device, matrix, row_idx)
-    end
-
-    defp set_matrix_by_row(empty_str, io_device, matrix, row_idx) when empty_str == " " or empty_str == "\n",
-      do: do_set_matrix_by_row(io_device, matrix, row_idx + 1)
-
-    defp set_matrix_by_row(:eof, _, matrix, _), do: matrix
-
-    defp set_matrix_by_row(data, io_device, matrix, row_idx) do
-      data = String.slice(data, 0..-2//1)
-      list_str = String.split(data, " ", trim: true)
-      IO.inspect(list_str)
-      case length(list_str) == matrix.columns+1 do
-        false ->
-          {:fail, "Line #{row_idx}: Not enough data. Expected #{matrix.columns + 1} numbers"}
-          true ->
-            try do
-              list_int =
-                Enum.map(list_str, fn str ->
-                  case Integer.parse(str) do
-                    {int, ""} -> int
-                    _ ->
-                      case Float.parse(str) do
-                        {float, ""} -> float
-                        _ -> throw({:error, str})
-                      end
-                  end
-                end)
-
-
-              case list_int do
-                reason
-                  when is_bitstring(reason) -> {:fail, reason}
-
-                list
-                  when is_list(list) ->
-                    matrix = %Matrix{ matrix |
-                      data: [Enum.take(list, matrix.columns) | matrix.data],
-                      results: [List.last(list) | matrix.results],
-                      rows: matrix.rows + 1 }
-
-                      do_set_matrix_by_row(io_device, matrix, row_idx + 1)
-              end
-            catch
-              {:error, str} ->
-                {:fail, "Line #{row_idx}: non-number \"#{str}\""}
-      end
-     end
-    end
-  end
-
-  defmodule Element do
-    defstruct row: 0,
-              col: 0,
-              val: 0
-  end
+  alias Matrix
+  alias Element
 
   @spec has_absolute_diagonal?(matix :: %Matrix{}) ::
-          {:ok, absolute_els :: %Element{}} | {:fail, reason :: bitstring()}
-  def has_absolute_diagonal?(matrix = %Matrix{data: data}) do
+          {:ok, absolute_els :: list(%Element{})} | {:fail, reason :: bitstring()}
+  def has_absolute_diagonal?(matrix = %Matrix{}) do
     # row_abs_sums = [..absolute_sums_for_each_row]
     row_abs_sums =
-      data
+      matrix.data
       |> Enum.map(fn row ->
         row
         |> Enum.reduce(0, fn v, acc ->
@@ -112,7 +16,7 @@ defmodule Math do
         end)
       end)
 
-    # absolute_els =  [..%Element{}] | {:fail, row_idx}
+    # absolute_els =  [..%Element{}] | {:fail, reason}
     absolute_els =
       Enum.with_index(matrix.data)
       |> Enum.reduce_while([], fn {row, row_idx}, acc ->
@@ -128,7 +32,7 @@ defmodule Math do
 
     case absolute_els do
       {:fail, row_idx} ->
-        {:fail, "Failed at row_idx = #{row_idx}. Not an absolute element"}
+        {:fail, "Failed at row_idx = #{row_idx}. This row doesn't contains an absolute element"}
 
       list ->
         cols_set =
@@ -140,6 +44,89 @@ defmodule Math do
         else
           {:fail, "Can't create main diagonal from absolute elements"}
         end
+    end
+  end
+
+  @spec jacobi_method(matrix::%Matrix{}, absolute_els::list(%Element{}), epsilon::number()):: %{results: [number()], iterations: integer()}
+  def jacobi_method(matrix = %Matrix{}, absolute_els, epsilon)
+      when is_list(absolute_els) and is_number(epsilon) and epsilon > 0 do
+    #init_values = List.duplicate(0, matrix.columns)
+    init_values =
+      Enum.with_index(matrix.results)
+      |> Enum.map(fn {b_val, b_idx}-> b_val/ Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if b_idx == c, do: v end) end)
+    do_jacobi_iteration(init_values, matrix, absolute_els, epsilon, 0)
+  end
+
+  defp do_jacobi_iteration(
+         current_values,
+         matrix = %Matrix{},
+         absolute_els,
+         epsilon,
+         iteration_num
+       ) do
+    rigth_side =
+      Enum.with_index(matrix.data)
+      |> Enum.map(fn {row, r_idx} ->
+        Enum.with_index(row)
+        |> Enum.reduce(Enum.at(matrix.results, r_idx), fn {el, col_idx}, acc ->
+          if col_idx != r_idx, do:
+            acc - el * Enum.at(current_values, col_idx),
+          else: acc
+        end)
+      end)
+
+    next_values =
+      Enum.with_index(rigth_side)
+      |> Enum.map(fn {right_val, r_idx} ->
+        left_val =
+          Enum.find_value(absolute_els, fn %Element{row: r, val: v} -> if r == r_idx, do: v end)
+
+        right_val / left_val
+      end)
+
+    max_diff =
+      Enum.with_index(next_values)
+      |> Enum.map(fn {el, el_idx} ->
+        abs(el - Enum.at(current_values, el_idx))
+      end)
+      |> Enum.max()
+
+    cond do
+      max_diff <= epsilon -> %{results: next_values, iterations: iteration_num}
+      true -> do_jacobi_iteration(next_values, matrix, absolute_els, epsilon, iteration_num + 1)
+    end
+  end
+
+  def gauss_seidel_method(mathix = %Matrix{}, absolute_els, epsilon)
+    when is_list(absolute_els) and is_number(epsilon) and epsilon > 0 do
+    init_values =
+    Enum.with_index(matrix.results)
+    |> Enum.map(fn {b_val, b_idx} -> b_val / Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if b_idx == c, do: v end) end)
+    do_gauss_seidel_method(init_values, matrix, absolute_els, epsilon, 0)
+  end
+
+  defp do_gauss_seidel_method(mathix = %Matrix{}, absolute_els, epsilon) do
+
+  end
+
+  @deprecated "made because of a misunderstanding"
+  @spec correspond_cubic_norm?(matrix :: %Matrix{}) ::
+          {:fail, reason :: bitstring()} | {:ok, cubic_norm :: number()}
+  def correspond_cubic_norm?(matrix = %Matrix{}) do
+    matrix.data
+    |> Enum.map(fn row ->
+      row
+      |> Enum.reduce(0, fn el, acc -> abs(el) + acc end)
+    end)
+
+    cubic_norm = Enum.max(matrix.data)
+
+    case cubic_norm do
+      num when num >= 1 ->
+        {:fail, "Method may not converge."}
+
+      num when num < 1 ->
+        {:ok, cubic_norm}
     end
   end
 

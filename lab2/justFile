@@ -1,3 +1,2 @@
 run: 
-    mix compile
     mix run -e "Main.main()"

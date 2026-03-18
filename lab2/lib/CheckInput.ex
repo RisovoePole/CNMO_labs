@@ -19,4 +19,14 @@
           ask_input(error_msg, len)
         end
       end
+
+    def ask_confirm(msg) do
+      case IO.gets(msg) do
+        "y" -> true
+        "n" -> false
+        _ -> ask_confirm(msg)
+      end
+
+    end
+
     end
