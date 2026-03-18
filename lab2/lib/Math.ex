@@ -47,13 +47,18 @@ defmodule Math do
     end
   end
 
-  @spec jacobi_method(matrix::%Matrix{}, absolute_els::list(%Element{}), epsilon::number()):: %{results: [number()], iterations: integer()}
+  @spec jacobi_method(matrix :: %Matrix{}, absolute_els :: list(%Element{}), epsilon :: number()) ::
+          %{results: [number()], iterations: integer()}
   def jacobi_method(matrix = %Matrix{}, absolute_els, epsilon)
       when is_list(absolute_els) and is_number(epsilon) and epsilon > 0 do
-    #init_values = List.duplicate(0, matrix.columns)
+    # init_values = List.duplicate(0, matrix.columns)
     init_values =
       Enum.with_index(matrix.results)
-      |> Enum.map(fn {b_val, b_idx}-> b_val/ Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if b_idx == c, do: v end) end)
+      |> Enum.map(fn {b_val, b_idx} ->
+        b_val /
+          Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if b_idx == c, do: v end)
+      end)
+
     do_jacobi_iteration(init_values, matrix, absolute_els, epsilon, 0)
   end
 
@@ -69,9 +74,9 @@ defmodule Math do
       |> Enum.map(fn {row, r_idx} ->
         Enum.with_index(row)
         |> Enum.reduce(Enum.at(matrix.results, r_idx), fn {el, col_idx}, acc ->
-          if col_idx != r_idx, do:
-            acc - el * Enum.at(current_values, col_idx),
-          else: acc
+          if col_idx != r_idx,
+            do: acc - el * Enum.at(current_values, col_idx),
+            else: acc
         end)
       end)
 
@@ -79,7 +84,7 @@ defmodule Math do
       Enum.with_index(rigth_side)
       |> Enum.map(fn {right_val, r_idx} ->
         left_val =
-          Enum.find_value(absolute_els, fn %Element{row: r, val: v} -> if r == r_idx, do: v end)
+          Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if c == r_idx, do: v end)
 
         right_val / left_val
       end)
@@ -97,16 +102,98 @@ defmodule Math do
     end
   end
 
-  def gauss_seidel_method(mathix = %Matrix{}, absolute_els, epsilon)
-    when is_list(absolute_els) and is_number(epsilon) and epsilon > 0 do
+  def gauss_seidel_method(matrix = %Matrix{}, absolute_els, epsilon)
+      when is_list(absolute_els) and is_number(epsilon) and epsilon > 0 do
     init_values =
-    Enum.with_index(matrix.results)
-    |> Enum.map(fn {b_val, b_idx} -> b_val / Enum.find_value(absolute_els, fn %Element{col: c, val: v} -> if b_idx == c, do: v end) end)
-    do_gauss_seidel_method(init_values, matrix, absolute_els, epsilon, 0)
+      Enum.with_index(matrix.results)
+      |> Enum.map(fn {b_val, b_idx} ->
+        b_val /
+          Enum.find_value(
+            absolute_els,
+            fn %Element{col: c, val: v} ->
+              if b_idx == c, do: v
+            end
+          )
+      end)
+
+    do_gauss_seidel_iteration(init_values, matrix, absolute_els, epsilon, 0)
   end
 
-  defp do_gauss_seidel_method(mathix = %Matrix{}, absolute_els, epsilon) do
+  defp do_gauss_seidel_iteration(
+         current_values,
+         matrix = %Matrix{},
+         absolute_els,
+         epsilon,
+         iteration_num
+       ) do
+    next_values =
+      Enum.with_index(matrix.data)
+      |> Enum.reduce(current_values, fn {row, r_idx}, acc_values ->
+        right_val =
+          Enum.with_index(row)
+          |> Enum.reduce(Enum.at(matrix.results, r_idx), fn {el, col_idx}, acc ->
+            if col_idx != r_idx,
+              do: acc - el * Enum.at(acc_values, col_idx),
+              else: acc
+          end)
 
+        left_val =
+          Enum.find_value(absolute_els, fn %Element{col: c, val: v} ->
+            if c == r_idx, do: v
+          end)
+
+        current_x = right_val / left_val
+
+        List.update_at(acc_values, r_idx, fn _ -> current_x end)
+      end)
+
+    max_diff =
+      Enum.with_index(next_values)
+      |> Enum.map(fn {el, el_idx} ->
+        abs(el - Enum.at(current_values, el_idx))
+      end)
+      |> Enum.max()
+
+    cond do
+      max_diff <= epsilon ->
+        %{results: next_values, iterations: iteration_num}
+
+      true ->
+        do_gauss_seidel_iteration(next_values, matrix, absolute_els, epsilon, iteration_num + 1)
+    end
+  end
+
+  def arrange_matrix(matrix = %Matrix{}, absolute_els) when is_list(absolute_els) do
+    new_matrix = %Matrix{
+      rows: matrix.rows,
+      columns: matrix.columns,
+      data: List.duplicate([], matrix.rows),
+      results: List.duplicate(0, matrix.rows)
+    }
+
+    %{
+      new_matrix
+      | data:
+          Enum.with_index(matrix.data)
+          |> Enum.map(fn {_, r_idx} ->
+            correspond_r_idx =
+              Enum.find_value(absolute_els, fn %Element{col: c, row: r} ->
+                if r_idx == c, do: r
+              end)
+
+            Enum.at(matrix.data, correspond_r_idx)
+          end),
+        results:
+          Enum.with_index(matrix.results)
+          |> Enum.map(fn {_, r_idx} ->
+            correspond_r_idx =
+              Enum.find_value(absolute_els, fn %Element{col: c, row: r} ->
+                if r_idx == c, do: r
+              end)
+
+            Enum.at(matrix.results, correspond_r_idx)
+          end)
+    }
   end
 
   @deprecated "made because of a misunderstanding"

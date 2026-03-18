@@ -55,7 +55,6 @@ defmodule Matrix do
     defp set_matrix_by_row(data, io_device, matrix, row_idx) do
       data = String.slice(data, 0..-2//1)
       list_str = String.split(data, " ", trim: true)
-      IO.inspect(list_str)
 
       case length(list_str) == matrix.columns + 1 do
         false ->
